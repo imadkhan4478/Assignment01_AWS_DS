@@ -82,4 +82,4 @@ Auto Scaling Group (UniEvent-ASG): Linked to our Launch Template and Target Grou
 
 Self-Healing Mechanism: If an instance fails a health check or experiences a network anomaly (such as the initial 502 Bad Gateway errors during network configuration), the ASG automatically drains, terminates, and replaces the instance with a fresh, correctly configured server.
 
-[Insert Screenshot of the final working website in your browser showing the "Welcome to UniEvent System" text here]
+
