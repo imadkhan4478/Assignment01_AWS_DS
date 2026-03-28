@@ -1,6 +1,6 @@
 📘 Step-by-Step Deployment Guide: UniEvent System AWS Infrastructure
 Project: UniEvent System (GIKI)
-Author: Jawad
+Author: Imad Khan
 Region: eu-north-1 (Stockholm)
 
 This document outlines the step-by-step creation of a highly available, secure, and auto-scaling web architecture on Amazon Web Services (AWS).
