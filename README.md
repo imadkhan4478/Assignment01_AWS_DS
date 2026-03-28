@@ -1,18 +1,23 @@
 # 🚀 UniEvent System — Scalable AWS Architecture
 
+![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Security](https://img.shields.io/badge/Security-Strict-success?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Deployed-success?style=for-the-badge)
+
 ## 📌 Project Overview
 Designed and deployed a production-style cloud architecture for the UniEvent System using AWS. 
 
-The system is built to handle real-world traffic with high availability, fault tolerance, and secure network isolation. This project simulates how modern backend systems are deployed in industry environments.
+The system is built to handle real-world traffic with high availability, fault tolerance, and secure network isolation. This project simulates how modern backend systems are deployed in industry environments, demonstrating a secure, scalable foundation.
 
 ---
 
 ## 🧠 Key Highlights
-* **Multi-AZ deployment** for zero single point of failure
-* **Fully private backend infrastructure**
-* **Intelligent traffic routing** via Load Balancer
-* **Auto Scaling** with self-healing capability
-* **Secure access** using IAM + SSM (no SSH keys required)
+* **Multi-AZ deployment** for zero single point of failure.
+* **Fully private backend infrastructure**.
+* **Intelligent traffic routing** via Load Balancer.
+* **Auto Scaling** with self-healing capability.
+* **Secure access** using IAM + SSM (no SSH keys required).
 
 ---
 
@@ -31,7 +36,7 @@ The system is built to handle real-world traffic with high availability, fault t
 
 | Layer | Service Used |
 | :--- | :--- |
-| **Networking** | VPC, Subnets, Route Tables |
+| **Networking** | VPC, Subnets, Route Tables, IGW, NAT Gateway |
 | **Compute** | EC2 (Amazon Linux 2023) |
 | **Load Balancing** | Application Load Balancer |
 | **Scaling** | Auto Scaling Group |
@@ -40,43 +45,45 @@ The system is built to handle real-world traffic with high availability, fault t
 
 ---
 
-## 🧱 Infrastructure Breakdown
+## 📘 Step-by-Step Deployment & Infrastructure Breakdown
 
-### 🔹 VPC Design
-* **Custom VPC:** `UniEvent-vpc`
-* **Region:** `eu-north-1`
-* **Subnet Strategy:** Spread across 2 Availability Zones for resilience ✔️
+### Step 1: Laying the Network Foundation (VPC & Subnets)
+Created an isolated virtual network (`UniEvent-vpc` in `eu-north-1`) to ensure complete control over the environment's security. To ensure high availability, the VPC was divided into four subnets across two Availability Zones:
+* **2 Public Subnets:** To host public-facing resources.
+* **2 Private Subnets:** To securely host backend EC2 instances.
 
-| Subnet Type | Purpose |
-| :--- | :--- |
-| **Public** | ALB, NAT Gateway |
-| **Private** | EC2 Instances |
+![VPC and Subnets Configuration](screenshots/step1-subnets.png)
 
-### 🌐 Internet Connectivity
+### Step 2: Configuring Internet Access (IGW & NAT Gateway)
+Configured gateways to allow public traffic to the website while keeping backend servers hidden.
 * **Internet Gateway:** Enables public access to the ALB.
-* **NAT Gateway:** Allows private instances to install packages and fetch updates while blocking inbound traffic.
+* **NAT Gateway:** A Regional NAT Gateway allows private instances to install packages and fetch updates while strictly blocking inbound traffic.
 
-### 🧭 Routing Logic
+![Gateways Configuration](screenshots/step2-gateways.png)
+
+### Step 3: Directing the Traffic (Routing Logic)
+Configured the route tables to ensure traffic flowed to the correct destinations securely.
 
 | Route Table | Destination | Target |
 | :--- | :--- | :--- |
-| **Public** | `0.0.0.0/0` | IGW |
-| **Private** | `0.0.0.0/0` | NAT |
+| **Public** | `0.0.0.0/0` | Internet Gateway (IGW) |
+| **Private** | `0.0.0.0/0` | NAT Gateway |
 
----
+![Route Tables](screenshots/step3-routes.png)
 
-## 🔐 Security Design
-* **ALB Security Group:** Allows HTTP (80) from anywhere.
-* **EC2 Security Group:** Allows HTTP (80) *only* from ALB.
-* ✔️ *Result: Backend is completely hidden from public access.*
+### Step 4: Establishing Security Boundaries (Security Groups)
+Enforced the principle of least privilege using strict virtual firewalls.
+* **ALB Security Group:** Allows `HTTP (80)` from anywhere.
+* **EC2 Security Group:** Allows `HTTP (80)` *only* from the ALB Security Group. 
+* *Result: The backend is completely hidden from direct public access.*
 
----
+![Security Groups](screenshots/step4-security.png)
 
-## ⚙️ Compute Automation
-* **Launch Template:** `UniEvent-Template`
-* **OS:** Amazon Linux 2023
-* **Permissions:** IAM Role attached
-* **Auto-configured via User Data:**
+### Step 5: Compute Automation (Launch Template)
+Automated the server creation process so any new server automatically configures itself to host the UniEvent website. 
+* **Launch Template:** `UniEvent-Template` (Amazon Linux 2023).
+* **Permissions:** IAM Role (`AmazonSSMManagedInstanceCore`) attached for keyless SSM access.
+* **User Data Script:**
 
 ```bash
 #!/bin/bash
@@ -85,23 +92,23 @@ yum install -y httpd
 systemctl start httpd
 systemctl enable httpd
 echo "<h1>UniEvent System - GIKI</h1>" > /var/www/html/index.html
+```
+**Step 6: Load Balancing & Health Checks**
+Implemented an Application Load Balancer to distribute incoming traffic evenly and monitor server health.
 
-⚖️ Load Balancing & 🔄 Auto Scaling
-Application Load Balancer
-Public-facing entry point that distributes traffic evenly.
+Target Group: Pings the root path (/). Success codes set to 200–499.
 
-Target Group: * Health check path: /
+ALB: Listens on Port 80 and actively forwards traffic only to "Healthy" instances.
 
-Success codes: 200–499
+**Step 7: Auto Scaling & Self-Healing**
+Wrapped the backend instances in an Auto Scaling Group to guarantee continuous uptime.
 
-✔️ Ensures only healthy instances receive traffic.
+Desired Capacity: 2 instances.
 
-Auto Scaling Group & Self-Healing
-Desired Capacity: 2 instances (Integrated with Target Group).
+Behavior: Detects unhealthy instances → Terminates automatically → Launches replacement instances. The system recovers without manual intervention.
 
-Behavior: Detects unhealthy instances → Terminates automatically → Launches replacement instances.
-
-✔️ System recovers without manual intervention.
+🎉 Final Result
+The fully deployed and load-balanced UniEvent System landing page.
 
 📊 Real Engineering Decisions
 Why Private Subnets? Prevents direct attacks on backend servers.
@@ -112,13 +119,6 @@ Why an ALB instead of direct EC2 access? Ensures proper load distribution, healt
 
 Why SSM instead of SSH? Eliminates SSH key management and provides more secure, auditable access control.
 
-💸 Cost Considerations
-The NAT Gateway is the most expensive component in this setup. For learning or non-production environments, costs can be optimized by:
-
-Using a NAT Instance instead of a Managed NAT Gateway.
-
-Scheduling infrastructure shutdowns during off-hours.
-
 🚧 Future Improvements
 [ ] HTTPS implementation using AWS Certificate Manager (ACM).
 
@@ -127,17 +127,3 @@ Scheduling infrastructure shutdowns during off-hours.
 [ ] RDS integration for a robust database layer.
 
 [ ] CloudWatch monitoring and advanced alerting.
-
-[ ] WAF (Web Application Firewall) for enhanced edge security.
-
-📷 Screenshots
-(Upload your screenshots to a screenshots folder in your repository, and these links will display them automatically)
-
-🎯 What This Project Demonstrates
-Cloud architecture design thinking
-
-Strong understanding of AWS networking
-
-Security-first mindset
-
-Production-level deployment practices
